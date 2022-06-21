@@ -1,6 +1,6 @@
 {
   "name": "kafka-service",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Kafka integration for Citisquare app",
   "main": "index.js",
   "type": "module",
