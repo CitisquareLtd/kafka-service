@@ -1,39 +1,10 @@
-import { Consumer, Kafka, Producer } from 'kafkajs';
+import { Consumer, Kafka, Producer, RecordMetadata } from 'kafkajs';
 import { delay, inject, injectable, singleton, registry } from 'tsyringe';
-
-export interface IKafKaConfig {
-  brokers: string[];
-  groupID: string;
-  //   topic: string;
-  clientId: string;
-}
-
-export enum ProducerEvents {
-  CONNECT = 'producer.connect',
-  DISCONNECT = 'producer.disconnect',
-  REQUEST = 'producer.network.request',
-  REQUEST_TIMEOUT = 'producer.network.request_timeout',
-  REQUEST_QUEUE_SIZE = 'producer.network.request_queue_size',
-}
-
-export enum ConsumerEvents {
-  HEARTBEAT = 'consumer.heartbeat',
-  COMMIT_OFFSETS = 'consumer.commit_offsets',
-  GROUP_JOIN = 'consumer.group_join',
-  FETCH_START = 'consumer.fetch_start',
-  FETCH = 'consumer.fetch',
-  START_BATCH_PROCESS = 'consumer.start_batch_process',
-  END_BATCH_PROCESS = 'consumer.end_batch_process',
-  CONNECT = 'consumer.connect',
-  DISCONNECT = 'consumer.disconnect',
-  STOP = 'consumer.stop',
-  CRASH = 'consumer.crash',
-  REBALANCING = 'consumer.rebalancing',
-  RECEIVED_UNSUBSCRIBED_TOPICS = 'consumer.received_unsubscribed_topics',
-  REQUEST = 'consumer.network.request',
-  REQUEST_TIMEOUT = 'consumer.network.request_timeout',
-  REQUEST_QUEUE_SIZE = 'consumer.network.request_queue_size',
-}
+import { ConsumerEvents } from './models/consumer-events';
+import { IKafkaMessage, IKafkaMessageHandler } from './models/i-kafka-message';
+import { IKafKaConfig } from './models/kafka-config';
+import { KafkaTopic } from './models/kafka-topics';
+import { ProducerEvents } from './models/producer-events';
 
 @singleton()
 export class KafkaService {
@@ -64,40 +35,55 @@ export class KafkaService {
 
   private listen() {
     this.producer.on(ProducerEvents.CONNECT, (event) => {
-      console.log('connected', event);
+      console.log('kafka producer connected', event);
       this.isProducerConnected = true;
     });
     this.producer.on(ProducerEvents.DISCONNECT, (event) => {
-      console.log('disconnected', event);
+      console.log('kafka producer disconnected', event);
       this.isProducerConnected = false;
     });
 
     this.consumer.on(ConsumerEvents.CONNECT, (event) => {
-      console.log('connected', event);
+      console.log('kafka consumer connected', event);
       this.isConsumerConnected = true;
     });
     this.consumer.on(ConsumerEvents.DISCONNECT, (event) => {
-      console.log('disconnected', event);
+      console.log('kafka consumer disconnected', event);
       this.isConsumerConnected = false;
     });
-     this.consumer.on(ConsumerEvents.REQUEST, (event) => {
-       console.log('request', event);
-       this.isConsumerConnected = false;
-     });
   }
 
-  run = async () => {
-    // Producing
-    await this.producer.connect();
-    await this.producer.send({
-      topic: 'test-topic',
-      acks: 1,
+  public connectConsumer(): Promise<void> {
+    return this.consumer.connect();
+  }
+
+  public connectProducer(): Promise<void> {
+    return this.producer.connect();
+  }
+
+  public async subscribeToTopics(topics: KafkaTopic[]): Promise<void> {
+    return this.consumer.subscribe({ topics });
+  }
+
+  public async send(data: {
+    topic: KafkaTopic;
+    acks: number;
+  }): Promise<RecordMetadata[]> {
+    if (!this.isProducerConnected) {
+      await this.connectProducer();
+    }
+
+    return this.producer.send({
+      topic: data.topic,
+      acks: data.acks,
       messages: [{ value: 'Hello KafkaJS user!' }],
     });
+  }
 
-    // Consuming
-    await this.consumer.connect();
-    await this.consumer.subscribe({ topic: 'test-topic', fromBeginning: true });
+  public async listenForMessages(data: IKafkaMessageHandler): Promise<any> {
+    if (!this.isConsumerConnected) {
+      await this.connectConsumer();
+    }
 
     await this.consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
@@ -106,7 +92,10 @@ export class KafkaService {
           offset: message.offset,
           value: message.value,
         });
+        if (data.topic === topic) {
+          data.handler(message);
+        }
       },
     });
-  };
+  }
 }
