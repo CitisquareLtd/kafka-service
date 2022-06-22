@@ -18,10 +18,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-        cd ../
-        npm i -S 
+          npm install
        
-
       - name: Rebuild the dist/ directory
         run:   npm run build
 
