@@ -31,11 +31,8 @@ let KafkaService = class KafkaService {
         this.config = config;
         this.isConsumerConnected = false;
         this.isProducerConnected = false;
-        this.kafka = new kafkajs_1.Kafka({
-            clientId: this.config.clientId,
-            brokers: this.config.brokers || ['localhost:9092'],
-        });
-        this.producer = this.kafka.producer();
+        this.kafka = new kafkajs_1.Kafka(this.config);
+        this.producer = this.kafka.producer({});
         this.consumer = this.kafka.consumer({
             groupId: this.config.groupID,
             allowAutoTopicCreation: true,
