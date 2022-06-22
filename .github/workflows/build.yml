@@ -11,15 +11,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set Node.js 16.x
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v2.5.1
         with:
           node-version: 16.x
 
       - name: Install dependencies
-        run: |
-          npm install
+        run: npm install
        
       - name: Rebuild the dist/ directory
         run:   npm run build
