@@ -19,12 +19,9 @@ export class KafkaService {
     @inject('IKafKaConfig')
     private config: IKafKaConfig
   ) {
-    this.kafka = new Kafka({
-      clientId: this.config.clientId,
-      brokers: this.config.brokers || ['localhost:9092'],
-    });
+    this.kafka = new Kafka(this.config);
 
-    this.producer = this.kafka.producer();
+    this.producer = this.kafka.producer({});
     this.consumer = this.kafka.consumer({
       groupId: this.config.groupID,
       allowAutoTopicCreation: true,
