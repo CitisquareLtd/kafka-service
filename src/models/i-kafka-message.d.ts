@@ -14,5 +14,5 @@ export declare type IKafkaMessageHandler = {
     eachBatchAutoResolve?: boolean;
     partitionsConsumedConcurrently?: number;
     topic: string;
-    handler: (message: IKafkaMessage) => any;
+    handler: (message: IKafkaMessage, partition: number) => any;
 };

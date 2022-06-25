@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.KafkaTopic = exports.ConsumerEvents = exports.ProducerEvents = exports.KafkaService = void 0;
+exports.IMessagePriority = exports.IChannel = exports.KafkaTopic = exports.ConsumerEvents = exports.ProducerEvents = exports.KafkaService = void 0;
 const kafka_service_1 = require("./src/kafka.service");
 Object.defineProperty(exports, "KafkaService", { enumerable: true, get: function () { return kafka_service_1.KafkaService; } });
 const producer_events_1 = require("./src/models/producer-events");
@@ -9,3 +9,7 @@ const consumer_events_1 = require("./src/models/consumer-events");
 Object.defineProperty(exports, "ConsumerEvents", { enumerable: true, get: function () { return consumer_events_1.ConsumerEvents; } });
 const kafka_topics_1 = require("./src/models/kafka-topics");
 Object.defineProperty(exports, "KafkaTopic", { enumerable: true, get: function () { return kafka_topics_1.KafkaTopic; } });
+const i_channel_1 = require("./src/models/i-channel");
+Object.defineProperty(exports, "IChannel", { enumerable: true, get: function () { return i_channel_1.IChannel; } });
+const i_message_priority_1 = require("./src/models/i-message-priority");
+Object.defineProperty(exports, "IMessagePriority", { enumerable: true, get: function () { return i_message_priority_1.IMessagePriority; } });
