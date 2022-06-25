@@ -8,6 +8,7 @@ import {
   ProducerRecord,
   RecordMetadata,
   RemoveInstrumentationEventListener,
+  TopicPartitionOffsetAndMetadata,
   ValueOf,
 } from 'kafkajs';
 import { delay, inject, injectable, singleton, registry } from 'tsyringe';
@@ -69,19 +70,10 @@ export class KafkaService {
     return this.consumer.subscribe({ topics });
   }
 
-  private async send(data: ProducerRecord): Promise<RecordMetadata[]> {
+  public async sendNotification(message: IMessage): Promise<RecordMetadata[]> {
     if (!this.isProducerConnected) {
       await this.connectProducer();
     }
-
-    return this.producer.send({
-      topic: data.topic,
-      acks: data.acks,
-      messages: data.messages,
-    });
-  }
-
-  public async sendNotification(message: IMessage): Promise<RecordMetadata[]> {
     return this.producer.send({
       topic: KafkaTopic.NOTIFICATION,
       acks: 1,
@@ -90,6 +82,9 @@ export class KafkaService {
   }
 
   public async sendLog(data: IAudit): Promise<RecordMetadata[]> {
+    if (!this.isProducerConnected) {
+      await this.connectProducer();
+    }
     return this.producer.send({
       topic: KafkaTopic.AUDIT_TRAIL,
       acks: 1,
@@ -109,5 +104,9 @@ export class KafkaService {
         }
       },
     });
+  }
+
+  public commitOffsets(topicPartitions: TopicPartitionOffsetAndMetadata[]) {
+    this.consumer.commitOffsets(topicPartitions);
   }
 }
