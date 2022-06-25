@@ -8,4 +8,6 @@ import { Message } from 'kafkajs';
 import { IMessage } from './src/models/i-message';
 import { IChannel } from './src/models/i-channel';
 import { IMessagePriority } from './src/models/i-message-priority';
-export { KafkaService, ProducerEvents, ConsumerEvents, IKafkaMessage, IKafkaMessageHandler, KafkaTopic, IKafKaConfig, Message, IMessage, IChannel, IMessagePriority, };
+import { IAudit } from './src/models/i-audit';
+import { IRecipient } from './src/models/i-recipient';
+export { KafkaService, ProducerEvents, ConsumerEvents, IKafkaMessage, IKafkaMessageHandler, KafkaTopic, IKafKaConfig, Message, IMessage, IChannel, IMessagePriority, IAudit, IRecipient };

@@ -21,8 +21,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.KafkaService = void 0;
 const kafkajs_1 = require("kafkajs");
 const tsyringe_1 = require("tsyringe");
-const consumer_events_1 = require("./models/consumer-events");
-const producer_events_1 = require("./models/producer-events");
+const kafka_topics_1 = require("./models/kafka-topics");
 let KafkaService = class KafkaService {
     constructor(
     // @inject('IKafKaConfig')
@@ -36,25 +35,13 @@ let KafkaService = class KafkaService {
             groupId: this.config.groupID,
             allowAutoTopicCreation: true,
         });
-        this.listen();
+        // this.listen();
     }
-    listen() {
-        this.producer.on(producer_events_1.ProducerEvents.CONNECT, (event) => {
-            console.log('kafka producer connected', event);
-            this.isProducerConnected = true;
-        });
-        this.producer.on(producer_events_1.ProducerEvents.DISCONNECT, (event) => {
-            console.log('kafka producer disconnected', event);
-            this.isProducerConnected = false;
-        });
-        this.consumer.on(consumer_events_1.ConsumerEvents.CONNECT, (event) => {
-            console.log('kafka consumer connected', event);
-            this.isConsumerConnected = true;
-        });
-        this.consumer.on(consumer_events_1.ConsumerEvents.DISCONNECT, (event) => {
-            console.log('kafka consumer disconnected', event);
-            this.isConsumerConnected = false;
-        });
+    listenToConsumerEvent(eventName, listener) {
+        return this.consumer.on(eventName, listener);
+    }
+    listenToProducerEvent(eventName, listener) {
+        return this.producer.on(eventName, listener);
     }
     connectConsumer() {
         return this.consumer.connect();
@@ -67,21 +54,27 @@ let KafkaService = class KafkaService {
             return this.consumer.subscribe({ topics });
         });
     }
-    send(data
-    //  {
-    // topic: KafkaTopic;
-    // acks: number;
-    // messages: Message[];
-    // }
-    ) {
+    sendNotification(message) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.isProducerConnected) {
                 yield this.connectProducer();
             }
             return this.producer.send({
-                topic: data.topic,
-                acks: data.acks,
-                messages: data.messages,
+                topic: kafka_topics_1.KafkaTopic.NOTIFICATION,
+                acks: 1,
+                messages: [{ value: JSON.stringify(message), key: message.messageId }],
+            });
+        });
+    }
+    sendLog(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.isProducerConnected) {
+                yield this.connectProducer();
+            }
+            return this.producer.send({
+                topic: kafka_topics_1.KafkaTopic.AUDIT_TRAIL,
+                acks: 1,
+                messages: [{ value: JSON.stringify(data) }],
             });
         });
     }
@@ -98,6 +91,9 @@ let KafkaService = class KafkaService {
                 }),
             });
         });
+    }
+    commitOffsets(topicPartitions) {
+        this.consumer.commitOffsets(topicPartitions);
     }
 };
 KafkaService = __decorate([
