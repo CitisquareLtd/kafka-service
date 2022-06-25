@@ -1,16 +1,29 @@
-import { Consumer, Kafka, Message, Producer, ProducerRecord, RecordMetadata } from 'kafkajs';
+import {
+  ConnectEvent,
+  Consumer,
+  ConsumerCommitOffsetsEvent,
+  Kafka,
+  Message,
+  Producer,
+  ProducerRecord,
+  RecordMetadata,
+  RemoveInstrumentationEventListener,
+  ValueOf,
+} from 'kafkajs';
 import { delay, inject, injectable, singleton, registry } from 'tsyringe';
 import { ConsumerEvents } from './models/consumer-events';
+import { IAudit } from './models/i-audit';
 import { IKafkaMessage, IKafkaMessageHandler } from './models/i-kafka-message';
+import { IMessage } from './models/i-message';
 import { IKafKaConfig } from './models/kafka-config';
 import { KafkaTopic } from './models/kafka-topics';
 import { ProducerEvents } from './models/producer-events';
 
 @singleton()
 export class KafkaService {
-  kafka: Kafka;
-  producer: Producer;
-  consumer: Consumer;
+  private kafka: Kafka;
+  private producer: Producer;
+  private consumer: Consumer;
 
   isConsumerConnected: boolean = false;
   isProducerConnected: boolean = false;
@@ -27,27 +40,21 @@ export class KafkaService {
       allowAutoTopicCreation: true,
     });
 
-    this.listen();
+    // this.listen();
   }
 
-  private listen() {
-    this.producer.on(ProducerEvents.CONNECT, (event) => {
-      console.log('kafka producer connected', event);
-      this.isProducerConnected = true;
-    });
-    this.producer.on(ProducerEvents.DISCONNECT, (event) => {
-      console.log('kafka producer disconnected', event);
-      this.isProducerConnected = false;
-    });
+  public listenToConsumerEvent(
+    eventName: ConsumerEvents,
+    listener: (event: ConsumerCommitOffsetsEvent) => void
+  ): RemoveInstrumentationEventListener<ValueOf<ConsumerEvents>> {
+    return this.consumer.on(eventName, listener);
+  }
 
-    this.consumer.on(ConsumerEvents.CONNECT, (event) => {
-      console.log('kafka consumer connected', event);
-      this.isConsumerConnected = true;
-    });
-    this.consumer.on(ConsumerEvents.DISCONNECT, (event) => {
-      console.log('kafka consumer disconnected', event);
-      this.isConsumerConnected = false;
-    });
+  public listenToProducerEvent(
+    eventName: ProducerEvents,
+    listener: (event: ConnectEvent) => void
+  ): RemoveInstrumentationEventListener<ValueOf<ProducerEvents>> {
+    return this.producer.on(eventName, listener);
   }
 
   public connectConsumer(): Promise<void> {
@@ -62,13 +69,7 @@ export class KafkaService {
     return this.consumer.subscribe({ topics });
   }
 
-  public async send(data:ProducerRecord
-    //  {
-    // topic: KafkaTopic;
-    // acks: number;
-    // messages: Message[];
-  // }
-  ): Promise<RecordMetadata[]> {
+  private async send(data: ProducerRecord): Promise<RecordMetadata[]> {
     if (!this.isProducerConnected) {
       await this.connectProducer();
     }
@@ -80,6 +81,22 @@ export class KafkaService {
     });
   }
 
+  public async sendNotification(message: IMessage): Promise<RecordMetadata[]> {
+    return this.producer.send({
+      topic: KafkaTopic.NOTIFICATION,
+      acks: 1,
+      messages: [{ value: JSON.stringify(message), key: message.messageId }],
+    });
+  }
+
+  public async sendLog(data: IAudit): Promise<RecordMetadata[]> {
+    return this.producer.send({
+      topic: KafkaTopic.AUDIT_TRAIL,
+      acks: 1,
+      messages: [{ value: JSON.stringify(data) }],
+    });
+  }
+
   public async listenForMessages(data: IKafkaMessageHandler): Promise<any> {
     if (!this.isConsumerConnected) {
       await this.connectConsumer();
@@ -87,7 +104,6 @@ export class KafkaService {
 
     await this.consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
-        
         if (data.topic === topic) {
           data.handler(message, partition);
         }

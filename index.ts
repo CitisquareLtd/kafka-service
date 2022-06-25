@@ -8,6 +8,7 @@ import { CompressionTypes, Message } from 'kafkajs';
 import { IMessage } from './src/models/i-message';
 import { IChannel } from './src/models/i-channel';
 import { IMessagePriority } from './src/models/i-message-priority';
+import { IAudit } from './src/models/i-audit';
 
 export {
   KafkaService,
@@ -20,5 +21,5 @@ export {
   Message,
   IMessage,
   IChannel,
-  IMessagePriority,
+  IMessagePriority,IAudit
 };

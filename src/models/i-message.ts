@@ -8,15 +8,14 @@ import { IRecipient } from './i-recipient';
  */
 export interface IMessage {
   messageId: string;
-  title: string;
-  body: string;
-  html: string;
-  text: string;
+  title?: string; 
+  html?: string;
+  text?: string;
   template: string;
   priority: IMessagePriority;
   channels: IChannel[];
   recipients: IRecipient[];
   data: object;
-  webhook: string;
+  webhook?: string;
   sendIndividually: boolean;
 }
