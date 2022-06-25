@@ -1,4 +1,4 @@
-import { Consumer, Kafka, Producer, RecordMetadata } from 'kafkajs';
+import { Consumer, Kafka, Message, Producer, ProducerRecord, RecordMetadata } from 'kafkajs';
 import { delay, inject, injectable, singleton, registry } from 'tsyringe';
 import { ConsumerEvents } from './models/consumer-events';
 import { IKafkaMessage, IKafkaMessageHandler } from './models/i-kafka-message';
@@ -16,7 +16,7 @@ export class KafkaService {
   isProducerConnected: boolean = false;
 
   constructor(
-    @inject('IKafKaConfig')
+    // @inject('IKafKaConfig')
     private config: IKafKaConfig
   ) {
     this.kafka = new Kafka(this.config);
@@ -62,10 +62,13 @@ export class KafkaService {
     return this.consumer.subscribe({ topics });
   }
 
-  public async send(data: {
-    topic: KafkaTopic;
-    acks: number;
-  }): Promise<RecordMetadata[]> {
+  public async send(data:ProducerRecord
+    //  {
+    // topic: KafkaTopic;
+    // acks: number;
+    // messages: Message[];
+  // }
+  ): Promise<RecordMetadata[]> {
     if (!this.isProducerConnected) {
       await this.connectProducer();
     }
@@ -73,7 +76,7 @@ export class KafkaService {
     return this.producer.send({
       topic: data.topic,
       acks: data.acks,
-      messages: [{ value: 'Hello KafkaJS user!' }],
+      messages: data.messages,
     });
   }
 
@@ -84,13 +87,9 @@ export class KafkaService {
 
     await this.consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
-        console.log({
-          partition,
-          offset: message.offset,
-          value: message.value,
-        });
+        
         if (data.topic === topic) {
-          data.handler(message);
+          data.handler(message, partition);
         }
       },
     });

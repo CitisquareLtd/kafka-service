@@ -16,5 +16,5 @@ export type IKafkaMessage = {
     partitionsConsumedConcurrently?: number,
     topic: string
     // eachBatch?: EachBatchHandler, 
-    handler: (message: IKafkaMessage)=> any
+    handler: (message: IKafkaMessage, partition: number)=> any
   }
