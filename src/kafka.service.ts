@@ -74,6 +74,7 @@ export class KafkaService {
     if (!this.isProducerConnected) {
       await this.connectProducer();
     }
+    
     return this.producer.send({
       topic: KafkaTopic.NOTIFICATION,
       acks: 1,
