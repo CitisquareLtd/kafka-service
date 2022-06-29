@@ -6,11 +6,13 @@ import { IMessage } from './models/i-message';
 import { IKafKaConfig } from './models/kafka-config';
 import { KafkaTopic } from './models/kafka-topics';
 import { ProducerEvents } from './models/producer-events';
+import Validator from './utils/validator';
 export declare class KafkaService {
     private config;
     private kafka;
     private producer;
     private consumer;
+    validator: Validator;
     isConsumerConnected: boolean;
     isProducerConnected: boolean;
     constructor(config: IKafKaConfig);

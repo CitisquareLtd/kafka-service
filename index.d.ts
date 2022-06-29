@@ -10,4 +10,5 @@ import { IChannel } from './src/models/i-channel';
 import { IMessagePriority } from './src/models/i-message-priority';
 import { IAudit } from './src/models/i-audit';
 import { IRecipient } from './src/models/i-recipient';
-export { KafkaService, ProducerEvents, ConsumerEvents, IKafkaMessage, IKafkaMessageHandler, KafkaTopic, IKafKaConfig, Message, IMessage, IChannel, IMessagePriority, IAudit, IRecipient };
+import Validator from './src/utils/validator';
+export { KafkaService, ProducerEvents, ConsumerEvents, IKafkaMessage, IKafkaMessageHandler, KafkaTopic, IKafKaConfig, Message, IMessage, IChannel, IMessagePriority, IAudit, IRecipient, Validator };

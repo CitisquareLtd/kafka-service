@@ -1,6 +1,9 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IMessagePriority = exports.IChannel = exports.KafkaTopic = exports.ConsumerEvents = exports.ProducerEvents = exports.KafkaService = void 0;
+exports.Validator = exports.IMessagePriority = exports.IChannel = exports.KafkaTopic = exports.ConsumerEvents = exports.ProducerEvents = exports.KafkaService = void 0;
 const kafka_service_1 = require("./src/kafka.service");
 Object.defineProperty(exports, "KafkaService", { enumerable: true, get: function () { return kafka_service_1.KafkaService; } });
 const producer_events_1 = require("./src/models/producer-events");
@@ -13,3 +16,5 @@ const i_channel_1 = require("./src/models/i-channel");
 Object.defineProperty(exports, "IChannel", { enumerable: true, get: function () { return i_channel_1.IChannel; } });
 const i_message_priority_1 = require("./src/models/i-message-priority");
 Object.defineProperty(exports, "IMessagePriority", { enumerable: true, get: function () { return i_message_priority_1.IMessagePriority; } });
+const validator_1 = __importDefault(require("./src/utils/validator"));
+exports.Validator = validator_1.default;

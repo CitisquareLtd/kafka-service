@@ -17,16 +17,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KafkaService = void 0;
 const kafkajs_1 = require("kafkajs");
 const tsyringe_1 = require("tsyringe");
 const kafka_topics_1 = require("./models/kafka-topics");
+const validator_1 = __importDefault(require("./utils/validator"));
 let KafkaService = class KafkaService {
     constructor(
     // @inject('IKafKaConfig')
     config) {
         this.config = config;
+        this.validator = new validator_1.default();
         this.isConsumerConnected = false;
         this.isProducerConnected = false;
         this.kafka = new kafkajs_1.Kafka(this.config);
@@ -59,6 +64,7 @@ let KafkaService = class KafkaService {
             if (!this.isProducerConnected) {
                 yield this.connectProducer();
             }
+            this.validator.validateNotification(message);
             return this.producer.send({
                 topic: kafka_topics_1.KafkaTopic.NOTIFICATION,
                 acks: 1,
@@ -85,8 +91,17 @@ let KafkaService = class KafkaService {
             }
             yield this.consumer.run({
                 eachMessage: ({ topic, partition, message }) => __awaiter(this, void 0, void 0, function* () {
-                    if (data.topic === topic) {
-                        data.handler(message, partition);
+                    let doc;
+                    doc = JSON.parse(message.value.toString());
+                    if (data.topic === topic && doc != null) {
+                        data.handler({
+                            key: message.key.toString(),
+                            value: doc,
+                            attributes: message.attributes,
+                            offset: message.offset,
+                            size: message.size,
+                            timestamp: message.timestamp,
+                        }, partition);
                     }
                 }),
             });
