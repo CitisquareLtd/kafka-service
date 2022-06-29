@@ -76,7 +76,7 @@ export class KafkaService {
     if (!this.isProducerConnected) {
       await this.connectProducer();
     }
-    
+
     this.validator.validateNotification(message);
 
     return this.producer.send({
@@ -104,8 +104,20 @@ export class KafkaService {
 
     await this.consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
-        if (data.topic === topic) {
-          data.handler(message, partition);
+        let doc: IMessage;
+        doc = JSON.parse(message.value.toString());
+        if (data.topic === topic && doc != null) {
+          data.handler(
+            {
+              key: message.key.toString(),
+              value: doc,
+              attributes: message.attributes,
+              offset: message.offset,
+              size: message.size,
+              timestamp: message.timestamp,
+            },
+            partition
+          );
         }
       },
     });

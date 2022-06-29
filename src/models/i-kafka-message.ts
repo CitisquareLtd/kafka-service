@@ -1,6 +1,9 @@
+import { IAudit } from './i-audit'
+import { IMessage } from './i-message'
+
 export type IKafkaMessage = {
-    key: Buffer | null
-    value: Buffer | null
+    key: String | null
+    value: IMessage | IAudit
     timestamp: string
     size: number
     attributes: number
@@ -8,7 +11,7 @@ export type IKafkaMessage = {
     // headers?: IHeaders
   }
 
-  export type IKafkaMessageHandler = {
+  export interface IKafkaMessageHandler  {
     autoCommit?: boolean,
     autoCommitInterval?: number | null,
     autoCommitThreshold?: number | null,
