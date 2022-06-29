@@ -18,6 +18,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Run Tests
+        run: npm run test  
        
       - name: Rebuild the dist/ directory
         run:   npm run build
