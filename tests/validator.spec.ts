@@ -1,3 +1,4 @@
+import { IChannel } from '../src/models/i-channel';
 import { ErrorMessages } from '../src/utils/error-messages';
 import Validator from '../src/utils/validator';
 
@@ -20,6 +21,57 @@ describe('testing Validator', () => {
       );
     } catch (error) {
       expect(error.message).toBe(ErrorMessages.MUST_HAVE_VALID_CHANNEL);
+      //   console.log(error);
+    }
+  });
+
+  test('message must have a valid sms recipient', () => {
+    try {
+      expect(
+        validator.validateNotification({
+          template: 'verify-email',
+          channels: [IChannel.SMS],
+          recipients: [{ phone: '+254712345678' }],
+        })
+      ).toBe(true);
+
+  
+
+      expect(
+        validator.validateNotification({
+          template: 'verify-email',
+          channels: [IChannel.SMS],
+          recipients: [],
+        })
+      ).toThrowError(Error);
+    } catch (error) {
+      expect(error.message).toBe(ErrorMessages.MUST_HAVE_VALID_SMS_RECIPIENT);
+        // console.log(error);
+    }
+
+     
+  });
+
+
+  test('message must have a valid email recipient', () => {
+    
+    try {
+        expect(
+            validator.validateNotification({
+              template: 'verify-email',
+              channels: [IChannel.EMAIL],
+              recipients: [{ email: 'ade@ciitisquare.net' }],
+            })
+          ).toBe(true);
+      expect(
+        validator.validateNotification({
+          template: 'verify-email',
+          channels: [IChannel.EMAIL],
+          recipients: [],
+        })
+      ).toThrow(Error);
+    } catch (error) {
+      expect(error.message).toBe(ErrorMessages.MUST_HAVE_VALID_EMAIL_RECIPIENT);
       //   console.log(error);
     }
   });

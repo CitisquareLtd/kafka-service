@@ -19,12 +19,14 @@ import { IMessage } from './models/i-message';
 import { IKafKaConfig } from './models/kafka-config';
 import { KafkaTopic } from './models/kafka-topics';
 import { ProducerEvents } from './models/producer-events';
+import Validator from './utils/validator';
 
 @singleton()
 export class KafkaService {
   private kafka: Kafka;
   private producer: Producer;
   private consumer: Consumer;
+  validator: Validator = new Validator();
 
   isConsumerConnected: boolean = false;
   isProducerConnected: boolean = false;
@@ -75,6 +77,8 @@ export class KafkaService {
       await this.connectProducer();
     }
     
+    this.validator.validateNotification(message);
+
     return this.producer.send({
       topic: KafkaTopic.NOTIFICATION,
       acks: 1,

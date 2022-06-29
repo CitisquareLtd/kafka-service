@@ -1,6 +1,7 @@
 import { IMessage } from '../models/i-message';
 import { isEmail } from 'validator';
 import { ErrorMessages } from './error-messages';
+import { IChannel } from '../models/i-channel';
 
 export default class Validator {
   static errorMe;
@@ -21,6 +22,28 @@ export default class Validator {
       message.channels.length < 1
     ) {
       throw new Error(ErrorMessages.MUST_HAVE_VALID_CHANNEL);
+    }
+
+    // channels must be an array and must contain at least one channel
+    // console.log(message.channels.includes(IChannel.EMAIL));
+    // console.log(message.channels);
+    if (message.channels.includes(IChannel.EMAIL)) {
+      let validEmailRecipients = message.recipients.filter(
+        (recipient) => recipient.email && isEmail(recipient.email)
+      );
+      //   console.log('message.channels', validEmailRecipients);
+      if (message.recipients.length < 1 || validEmailRecipients.length < 0) {
+        throw new Error(ErrorMessages.MUST_HAVE_VALID_EMAIL_RECIPIENT);
+      }
+    }
+    if (message.channels.includes(IChannel.SMS)) {
+      let validSMSRecipients = message.recipients.filter(
+        (recipient) => recipient.phone && String(recipient.phone).length < 5
+      );
+      //   console.log('message.channels', validSMSRecipients);
+      if (message.recipients.length < 1 || validSMSRecipients.length < 0) {
+        throw new Error(ErrorMessages.MUST_HAVE_VALID_SMS_RECIPIENT);
+      }
     }
 
     return true;

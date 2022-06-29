@@ -10,6 +10,7 @@ import { IChannel } from './src/models/i-channel';
 import { IMessagePriority } from './src/models/i-message-priority';
 import { IAudit } from './src/models/i-audit';
 import { IRecipient } from './src/models/i-recipient';
+import Validator from './src/utils/validator';
 
 export {
   KafkaService,
@@ -22,5 +23,5 @@ export {
   Message,
   IMessage,
   IChannel,
-  IMessagePriority,IAudit, IRecipient
+  IMessagePriority,IAudit, IRecipient, Validator
 };
