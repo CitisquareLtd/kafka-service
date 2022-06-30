@@ -24,6 +24,14 @@ export default class Validator {
       throw new Error(ErrorMessages.MUST_HAVE_VALID_CHANNEL);
     }
 
+    for (let a = 0; a < message.channels.length; a++) {
+      const element = message.channels[a];
+
+      if (element !== IChannel.SMS && element !== IChannel.EMAIL) {
+        throw new Error(ErrorMessages.MUST_HAVE_VALID_CHANNEL);
+      }
+    }
+
     // channels must be an array and must contain at least one channel
     // console.log(message.channels.includes(IChannel.EMAIL));
     // console.log(message.channels);
