@@ -8,7 +8,11 @@ services:
     volumes:
       - "zookeeper_data:/bitnami"
     environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ALLOW_ANONYMOUS_LOGIN=no
+      - ZOO_ENABLE_AUTH=yes
+      - KAFKA_ZOOKEEPER_PROTOCOL=SAsL
+      - ZOO_SERVER_USERS=citisquare
+      - ZOO_SERVER_PASSWORDS=citisquare-zookeeper
   kafka:
     image: docker.io/bitnami/kafka:3.2
     ports:
@@ -16,10 +20,15 @@ services:
     volumes:
       - "kafka_data:/bitnami"
     environment:
+      - KAFKA_ZOOKEEPER_PROTOCOL:SASL
+      - KAFKA_ZOOKEEPER_USER:citisquare
+      - KAFKA_ZOOKEEPER_PASSWORD:citisquare-zookeeper
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:9092    
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
+      # - KAFKA_CLIENT_USERS=citisquare
+      # - KAFKA_CLIENT_PASSWORDS=citisquare-zookeeper
     depends_on:
       - zookeeper
 

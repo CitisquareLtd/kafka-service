@@ -9,3 +9,5 @@
 
 ##### using pnpm 
    `pnpm instal --save https://CitisquareLtd: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@github.com/CitisquareLtd/kafka-service.git#build`   
+
+   https://hub.docker.com/r/bitnami/kafka/
