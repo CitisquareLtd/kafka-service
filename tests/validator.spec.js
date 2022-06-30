@@ -26,6 +26,19 @@ describe('testing Validator', () => {
             //   console.log(error);
         }
     });
+    test('message must have at least one recipient', () => {
+        try {
+            expect(validator.validateNotification({
+                template: 'verify-email',
+                channels: [i_channel_1.IChannel.SMS],
+                //   recipients: [],
+            })).toThrowError(Error);
+        }
+        catch (error) {
+            expect(error.message).toBe(error_messages_1.ErrorMessages.MUST_HAVE_VALID_RECIPIENT);
+            // console.log(error);
+        }
+    });
     test('message must have a valid sms recipient', () => {
         try {
             expect(validator.validateNotification({
@@ -36,7 +49,7 @@ describe('testing Validator', () => {
             expect(validator.validateNotification({
                 template: 'verify-email',
                 channels: [i_channel_1.IChannel.SMS],
-                recipients: [],
+                recipients: [{}],
             })).toThrowError(Error);
         }
         catch (error) {
@@ -54,7 +67,7 @@ describe('testing Validator', () => {
             expect(validator.validateNotification({
                 template: 'verify-email',
                 channels: [i_channel_1.IChannel.EMAIL],
-                recipients: [],
+                recipients: [{}],
             })).toThrow(Error);
         }
         catch (error) {

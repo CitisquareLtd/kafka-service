@@ -23,20 +23,23 @@ class Validator {
                 throw new Error(error_messages_1.ErrorMessages.MUST_HAVE_VALID_CHANNEL);
             }
         }
+        if (!message.recipients || message.recipients.filter((value) => String(value.email).length > 2 || String(value.phone).length > 5).length < 1) {
+            throw new Error(error_messages_1.ErrorMessages.MUST_HAVE_VALID_RECIPIENT);
+        }
         // channels must be an array and must contain at least one channel
         // console.log(message.channels.includes(IChannel.EMAIL));
         // console.log(message.channels);
         if (message.channels.includes(i_channel_1.IChannel.EMAIL)) {
             let validEmailRecipients = message.recipients.filter((recipient) => recipient.email && (0, validator_1.isEmail)(recipient.email));
             //   console.log('message.channels', validEmailRecipients);
-            if (message.recipients.length < 1 || validEmailRecipients.length < 0) {
+            if (message.recipients.length < 1 || validEmailRecipients.length < 1) {
                 throw new Error(error_messages_1.ErrorMessages.MUST_HAVE_VALID_EMAIL_RECIPIENT);
             }
         }
         if (message.channels.includes(i_channel_1.IChannel.SMS)) {
             let validSMSRecipients = message.recipients.filter((recipient) => recipient.phone && String(recipient.phone).length < 5);
             //   console.log('message.channels', validSMSRecipients);
-            if (message.recipients.length < 1 || validSMSRecipients.length < 0) {
+            if (message.recipients.length < 1 || validSMSRecipients.length < 1) {
                 throw new Error(error_messages_1.ErrorMessages.MUST_HAVE_VALID_SMS_RECIPIENT);
             }
         }
