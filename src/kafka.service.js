@@ -96,7 +96,7 @@ let KafkaService = class KafkaService {
                     doc = JSON.parse(message.value.toString());
                     if (data.topic === topic && doc != null) {
                         data.handler({
-                            key: message ? message.key.toString() : (0, uid_1.uid)(20),
+                            key: message.key ? message.key.toString() : (0, uid_1.uid)(20),
                             value: doc,
                             attributes: message.attributes,
                             offset: message.offset,
