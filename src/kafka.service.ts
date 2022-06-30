@@ -110,7 +110,7 @@ export class KafkaService {
         if (data.topic === topic && doc != null) {
           data.handler(
             {
-              key:message? message.key.toString() : uid(20),
+              key:message.key? message.key.toString() : uid(20),
               value: doc,
               attributes: message.attributes,
               offset: message.offset,
