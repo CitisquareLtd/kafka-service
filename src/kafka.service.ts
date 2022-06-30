@@ -20,6 +20,7 @@ import { IKafKaConfig } from './models/kafka-config';
 import { KafkaTopic } from './models/kafka-topics';
 import { ProducerEvents } from './models/producer-events';
 import Validator from './utils/validator';
+import {uid} from 'uid';
 
 @singleton()
 export class KafkaService {
@@ -82,7 +83,7 @@ export class KafkaService {
     return this.producer.send({
       topic: KafkaTopic.NOTIFICATION,
       acks: 1,
-      messages: [{ value: JSON.stringify(message), key: message.messageId }],
+      messages: [{ value: JSON.stringify(message), key: message.messageId || uid(20) }],
     });
   }
 
