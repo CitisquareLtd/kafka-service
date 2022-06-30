@@ -26,6 +26,7 @@ const kafkajs_1 = require("kafkajs");
 const tsyringe_1 = require("tsyringe");
 const kafka_topics_1 = require("./models/kafka-topics");
 const validator_1 = __importDefault(require("./utils/validator"));
+const uid_1 = require("uid");
 let KafkaService = class KafkaService {
     constructor(
     // @inject('IKafKaConfig')
@@ -68,7 +69,7 @@ let KafkaService = class KafkaService {
             return this.producer.send({
                 topic: kafka_topics_1.KafkaTopic.NOTIFICATION,
                 acks: 1,
-                messages: [{ value: JSON.stringify(message), key: message.messageId }],
+                messages: [{ value: JSON.stringify(message), key: message.messageId || (0, uid_1.uid)(20) }],
             });
         });
     }
