@@ -37,7 +37,7 @@ class Validator {
             }
         }
         if (message.channels.includes(i_channel_1.IChannel.SMS)) {
-            let validSMSRecipients = message.recipients.filter((recipient) => recipient.phone && String(recipient.phone).length < 5);
+            let validSMSRecipients = message.recipients.filter((recipient) => recipient.phone && String(recipient.phone).length > 5);
             //   console.log('message.channels', validSMSRecipients);
             if (message.recipients.length < 1 || validSMSRecipients.length < 1) {
                 throw new Error(error_messages_1.ErrorMessages.MUST_HAVE_VALID_SMS_RECIPIENT);
