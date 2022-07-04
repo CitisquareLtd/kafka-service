@@ -4,4 +4,7 @@ export interface IKafKaConfig {
     groupID: string;
     clientId: string;
     ssal?: ISsalConfig;
+    ssl?: {
+        ca?: string;
+    } | boolean;
 }
