@@ -6,5 +6,6 @@ export interface IKafKaConfig {
     ssal?: ISsalConfig;
     ssl?: {
         ca?: string;
+        rejectUnauthorized?: boolean;
     } | boolean;
 }
