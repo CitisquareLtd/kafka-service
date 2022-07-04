@@ -5,5 +5,5 @@ export  interface IKafKaConfig {
     groupID: string; 
     clientId: string;
     ssal?: ISsalConfig;
-    ssl?: {ca?: string } | boolean
+    ssl?: {ca?: string, rejectUnauthorized?: boolean } | boolean
   }
