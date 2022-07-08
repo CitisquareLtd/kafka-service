@@ -198,7 +198,7 @@ export class KafkaService {
 
   public commitOffsets(topicPartitions: {
     offset: number;
-    partition: 0;
+    partition: number;
     topic: string;
   }) {
     this.consumer.commit(topicPartitions);
