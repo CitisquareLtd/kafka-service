@@ -1,16 +1,17 @@
-import {
-  ConnectEvent,
-  Consumer,
-  ConsumerCommitOffsetsEvent,
-  Kafka,
-  Message,
-  Producer,
-  ProducerRecord,
-  RecordMetadata,
-  RemoveInstrumentationEventListener,
-  TopicPartitionOffsetAndMetadata,
-  ValueOf,
-} from 'kafkajs';
+// import {
+//   ConnectEvent,
+//   Consumer,
+//   ConsumerCommitOffsetsEvent,
+//   Kafka,
+//   Message,
+//   Producer,
+//   ProducerRecord,
+//   RecordMetadata,
+//   RemoveInstrumentationEventListener,
+//   TopicPartitionOffsetAndMetadata,
+//   ValueOf,
+// } from 'kafkajs';
+import Kafka from 'node-rdkafka';
 import { delay, inject, injectable, singleton, registry } from 'tsyringe';
 import { ConsumerEvents } from './models/consumer-events';
 import { IAudit } from './models/i-audit';
@@ -20,13 +21,33 @@ import { IKafKaConfig } from './models/kafka-config';
 import { KafkaTopic } from './models/kafka-topics';
 import { ProducerEvents } from './models/producer-events';
 import Validator from './utils/validator';
-import {uid} from 'uid';
+import { uid } from 'uid';
+type KafkaClientEvents =
+  | 'disconnected'
+  | 'ready'
+  | 'connection.failure'
+  | 'event.error'
+  | 'event.stats'
+  | 'event.log'
+  | 'event.event'
+  | 'event.throttle';
+type KafkaConsumerEvents =
+  | 'data'
+  | 'partition.eof'
+  | 'rebalance'
+  | 'rebalance.error'
+  | 'subscribed'
+  | 'unsubscribed'
+  | 'unsubscribe'
+  | 'offset.commit'
+  | KafkaClientEvents;
+type KafkaProducerEvents = 'delivery-report' | KafkaClientEvents;
 
 @singleton()
 export class KafkaService {
-  private kafka: Kafka;
-  private producer: Producer;
-  private consumer: Consumer;
+  // private kafka: Kafka;
+  private producer: Kafka.Producer;
+  private consumer: Kafka.KafkaConsumer;
   validator: Validator = new Validator();
 
   isConsumerConnected: boolean = false;
@@ -36,95 +57,150 @@ export class KafkaService {
     // @inject('IKafKaConfig')
     private config: IKafKaConfig
   ) {
-    this.kafka = new Kafka(this.config);
+    // this.kafka = new Kafka(this.config);
+    let globalConfig: Kafka.GlobalConfig = {
+      'bootstrap.servers': this.config.brokers.join(','),
+      'client.id': this.config.clientId,
+    };
+    if (this.config.ssl) {
+      globalConfig['ssl.ca.location'] = this.config.ssl.ca;
+      // globalConfig['ssl.ca.location'] = this.config.ssl.ca;
+    }
+    if (this.config.sasl) {
+      globalConfig['security.protocol'] = 'sasl_ssl';
+      globalConfig['sasl.mechanism'] = this.config.sasl.mechanism;
+      globalConfig['sasl.username'] = this.config.sasl.username;
+      globalConfig['sasl.password'] = this.config.sasl.password;
+      globalConfig['sasl.password'] = this.config.sasl.password;
+    }
 
-    this.producer = this.kafka.producer({});
-    this.consumer = this.kafka.consumer({
-      groupId: this.config.groupID,
-      allowAutoTopicCreation: true,
-    });
+    this.producer = new Kafka.Producer(globalConfig);
+    this.consumer = new Kafka.KafkaConsumer(
+      { ...globalConfig, 'group.id': this.config.groupID },
+      {}
+    );
 
     // this.listen();
   }
 
   public listenToConsumerEvent(
-    eventName: ConsumerEvents,
-    listener: (event: ConsumerCommitOffsetsEvent) => void
-  ): RemoveInstrumentationEventListener<ValueOf<ConsumerEvents>> {
+    eventName: KafkaConsumerEvents,
+    listener: (event: any) => void
+  ): any {
     return this.consumer.on(eventName, listener);
   }
 
   public listenToProducerEvent(
-    eventName: ProducerEvents,
-    listener: (event: ConnectEvent) => void
-  ): RemoveInstrumentationEventListener<ValueOf<ProducerEvents>> {
+    eventName: KafkaProducerEvents,
+    listener: (event: any) => void
+  ): any {
     return this.producer.on(eventName, listener);
   }
 
-  public connectConsumer(): Promise<void> {
-    return this.consumer.connect();
+  public async connectConsumer(topic: string): Promise<void> {
+    this.consumer.connect({ topic });
   }
 
-  public connectProducer(): Promise<void> {
-    return this.producer.connect();
+  public async connectProducer(): Promise<void> {
+    await this.producer.connect({});
   }
 
   public async subscribeToTopics(topics: KafkaTopic[]): Promise<void> {
-    return this.consumer.subscribe({ topics });
+    this.consumer.subscribe([...topics]);
   }
 
-  public async sendNotification(message: IMessage): Promise<RecordMetadata[]> {
+  public async sendNotification(message: IMessage): Promise<any> {
     if (!this.isProducerConnected) {
       await this.connectProducer();
     }
 
     this.validator.validateNotification(message);
 
-    return this.producer.send({
-      topic: KafkaTopic.NOTIFICATION,
-      acks: 1,
-      messages: [{ value: JSON.stringify(message), key: message.messageId || uid(20) }],
-    });
+    return this.producer.produce(
+      // topic
+      KafkaTopic.NOTIFICATION,
+      // partition,
+      // optionally we can manually specify a partition for the message
+      // this defaults to -1 - which will use librdkafka's default partitioner (consistent random for keyed messages, random for unkeyed messages)
+      null,
+      // message.value
+      Buffer.from(JSON.stringify(message)),
+      // message.key, for keyed messages, we also specify the key - note that this field is optional
+      message.messageId || uid(20),
+      // you can send a timestamp here. If your broker version supports it,
+      // it will get added. Otherwise, we default to 0
+      Date.now()
+      // you can send an opaque token here, which gets passed along
+      // to your delivery reports
+    );
   }
 
-  public async sendLog(data: IAudit): Promise<RecordMetadata[]> {
+  public async sendLog(data: IAudit): Promise<any> {
     if (!this.isProducerConnected) {
       await this.connectProducer();
     }
-    return this.producer.send({
-      topic: KafkaTopic.AUDIT_TRAIL,
-      acks: 1,
-      messages: [{ value: JSON.stringify(data) }],
-    });
+    return this.producer.produce(
+      // topic
+      KafkaTopic.AUDIT_TRAIL,
+      // partition,
+      // optionally we can manually specify a partition for the message
+      // this defaults to -1 - which will use librdkafka's default partitioner (consistent random for keyed messages, random for unkeyed messages)
+      null,
+      // message.value
+      Buffer.from(JSON.stringify(data)),
+      // message.key, for keyed messages, we also specify the key - note that this field is optional
+      uid(20),
+      // you can send a timestamp here. If your broker version supports it,
+      // it will get added. Otherwise, we default to 0
+      Date.now()
+      // you can send an opaque token here, which gets passed along
+      // to your delivery reports
+    );
   }
 
   public async listenForMessages(data: IKafkaMessageHandler): Promise<any> {
     if (!this.isConsumerConnected) {
-      await this.connectConsumer();
+      await this.connectConsumer(data.topic);
     }
 
-    await this.consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
+    this.consumer.on(
+      'data',
+      ({
+        topic,
+        partition,
+        value,
+        offset,
+        key,
+        timestamp,
+        headers,
+        size,
+        opaque,
+      }) => {
+        console.log(data);
         let doc: IMessage;
-        doc = JSON.parse(message.value.toString());
+        doc = JSON.parse(value.toString());
         if (data.topic === topic && doc != null) {
           data.handler(
             {
-              key:message.key? message.key.toString() : uid(20),
+              key: key ? key.toString() : uid(20),
               value: doc,
-              attributes: message.attributes,
-              offset: message.offset,
-              size: message.size,
-              timestamp: message.timestamp,
+              attributes: size,
+              offset: offset,
+              size: size,
+              timestamp: timestamp,
             },
             partition
           );
         }
-      },
-    });
+      }
+    );
   }
 
-  public commitOffsets(topicPartitions: TopicPartitionOffsetAndMetadata[]) {
-    this.consumer.commitOffsets(topicPartitions);
+  public commitOffsets(topicPartitions: {
+    offset: number;
+    partition: 0;
+    topic: string;
+  }) {
+    this.consumer.commit(topicPartitions);
   }
 }

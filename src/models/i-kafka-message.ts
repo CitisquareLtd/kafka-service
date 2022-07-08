@@ -4,10 +4,10 @@ import { IMessage } from './i-message'
 export type IKafkaMessage = {
     key: String | null
     value: IMessage | IAudit
-    timestamp: string
+    timestamp: number
     size: number
     attributes: number
-    offset: string
+    offset: number
     // headers?: IHeaders
   }
 
