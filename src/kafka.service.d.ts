@@ -25,7 +25,7 @@ export declare class KafkaService {
     listenForMessages(data: IKafkaMessageHandler): Promise<any>;
     commitOffsets(topicPartitions: {
         offset: number;
-        partition: 0;
+        partition: number;
         topic: string;
     }): void;
 }
