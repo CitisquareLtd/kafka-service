@@ -59,12 +59,15 @@ export class KafkaService {
   ) {
     // this.kafka = new Kafka(this.config);
     let globalConfig: Kafka.GlobalConfig = {
-      'bootstrap.servers': this.config.brokers.join(','),
+      'metadata.broker.list': this.config.brokers.join(','),
       'client.id': this.config.clientId,
+      
     };
     if (this.config.ssl) {
       globalConfig['ssl.ca.location'] = this.config.ssl.ca;
-      // globalConfig['ssl.ca.location'] = this.config.ssl.ca;
+      globalConfig['ssl.certificate.verify_cb'] = (err, cert, cb) => {
+        return true;
+      };
     }
     if (this.config.sasl) {
       globalConfig['security.protocol'] = 'sasl_ssl';
@@ -74,16 +77,16 @@ export class KafkaService {
       globalConfig['sasl.password'] = this.config.sasl.password;
     }
 
-    this.producer = new Kafka.Producer(globalConfig);
+    this.producer = new Kafka.Producer({...globalConfig, 'dr_cb': true});
     this.consumer = new Kafka.KafkaConsumer(
-      { ...globalConfig, 'group.id': this.config.groupID },
+      { ...globalConfig, 'group.id': this.config.groupID,  },
       {}
     );
 
     this.consumer.on('ready', () => {
       this.isConsumerConnected = true;
       console.log('Consumer is ready');
-      this.consumer.commit();
+      this.consumer.consume();
     });
 
     this.producer.on('ready', () => {
