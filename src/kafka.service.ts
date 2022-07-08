@@ -162,6 +162,10 @@ export class KafkaService {
     if (!this.isConsumerConnected) {
       await this.connectConsumer(data.topic);
     }
+    this.consumer.on('ready', () => {
+      console.log('Consumer is ready');
+      this.consumer.commit();
+    });
 
     this.consumer.on(
       'data',
