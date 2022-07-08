@@ -66,6 +66,23 @@ let KafkaService = class KafkaService {
         }
         this.producer = new node_rdkafka_1.default.Producer(globalConfig);
         this.consumer = new node_rdkafka_1.default.KafkaConsumer(Object.assign(Object.assign({}, globalConfig), { 'group.id': this.config.groupID }), {});
+        this.consumer.on('ready', () => {
+            this.isConsumerConnected = true;
+            console.log('Consumer is ready');
+            this.consumer.commit();
+        });
+        this.producer.on('ready', () => {
+            this.isProducerConnected = true;
+            console.log('Producer is ready');
+        });
+        this.consumer.on('disconnected', () => {
+            this.isConsumerConnected = false;
+            console.log('Consumer disconnected');
+        });
+        this.producer.on('disconnected', () => {
+            this.isProducerConnected = false;
+            console.log('Producer disconnected');
+        });
         // this.listen();
     }
     listenToConsumerEvent(eventName, listener) {
@@ -143,10 +160,6 @@ let KafkaService = class KafkaService {
             if (!this.isConsumerConnected) {
                 yield this.connectConsumer(data.topic);
             }
-            this.consumer.on('ready', () => {
-                console.log('Consumer is ready');
-                this.consumer.commit();
-            });
             this.consumer.on('data', ({ topic, partition, value, offset, key, timestamp, headers, size, opaque, }) => {
                 console.log(data);
                 let doc;
