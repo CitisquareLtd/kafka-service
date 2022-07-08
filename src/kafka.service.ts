@@ -80,6 +80,27 @@ export class KafkaService {
       {}
     );
 
+    this.consumer.on('ready', () => {
+      this.isConsumerConnected = true;
+      console.log('Consumer is ready');
+      this.consumer.commit();
+    });
+
+    this.producer.on('ready', () => {
+      this.isProducerConnected = true;
+      console.log('Producer is ready');
+    });
+
+    this.consumer.on('disconnected', () => {
+      this.isConsumerConnected = false;
+      console.log('Consumer disconnected');
+    });
+
+    this.producer.on('disconnected', () => {
+      this.isProducerConnected = false;
+      console.log('Producer disconnected');
+    });
+
     // this.listen();
   }
 
@@ -162,10 +183,6 @@ export class KafkaService {
     if (!this.isConsumerConnected) {
       await this.connectConsumer(data.topic);
     }
-    this.consumer.on('ready', () => {
-      console.log('Consumer is ready');
-      this.consumer.commit();
-    });
 
     this.consumer.on(
       'data',
