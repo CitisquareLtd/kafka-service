@@ -22,7 +22,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KafkaService = void 0;
-const kafkajs_1 = require("kafkajs");
+// import {
+//   ConnectEvent,
+//   Consumer,
+//   ConsumerCommitOffsetsEvent,
+//   Kafka,
+//   Message,
+//   Producer,
+//   ProducerRecord,
+//   RecordMetadata,
+//   RemoveInstrumentationEventListener,
+//   TopicPartitionOffsetAndMetadata,
+//   ValueOf,
+// } from 'kafkajs';
+const node_rdkafka_1 = __importDefault(require("node-rdkafka"));
 const tsyringe_1 = require("tsyringe");
 const kafka_topics_1 = require("./models/kafka-topics");
 const validator_1 = __importDefault(require("./utils/validator"));
@@ -35,12 +48,24 @@ let KafkaService = class KafkaService {
         this.validator = new validator_1.default();
         this.isConsumerConnected = false;
         this.isProducerConnected = false;
-        this.kafka = new kafkajs_1.Kafka(this.config);
-        this.producer = this.kafka.producer({});
-        this.consumer = this.kafka.consumer({
-            groupId: this.config.groupID,
-            allowAutoTopicCreation: true,
-        });
+        // this.kafka = new Kafka(this.config);
+        let globalConfig = {
+            'bootstrap.servers': this.config.brokers.join(','),
+            'client.id': this.config.clientId,
+        };
+        if (this.config.ssl) {
+            globalConfig['ssl.ca.location'] = this.config.ssl.ca;
+            // globalConfig['ssl.ca.location'] = this.config.ssl.ca;
+        }
+        if (this.config.sasl) {
+            globalConfig['security.protocol'] = 'sasl_ssl';
+            globalConfig['sasl.mechanism'] = this.config.sasl.mechanism;
+            globalConfig['sasl.username'] = this.config.sasl.username;
+            globalConfig['sasl.password'] = this.config.sasl.password;
+            globalConfig['sasl.password'] = this.config.sasl.password;
+        }
+        this.producer = new node_rdkafka_1.default.Producer(globalConfig);
+        this.consumer = new node_rdkafka_1.default.KafkaConsumer(Object.assign(Object.assign({}, globalConfig), { 'group.id': this.config.groupID }), {});
         // this.listen();
     }
     listenToConsumerEvent(eventName, listener) {
@@ -49,15 +74,19 @@ let KafkaService = class KafkaService {
     listenToProducerEvent(eventName, listener) {
         return this.producer.on(eventName, listener);
     }
-    connectConsumer() {
-        return this.consumer.connect();
+    connectConsumer(topic) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.consumer.connect({ topic });
+        });
     }
     connectProducer() {
-        return this.producer.connect();
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.producer.connect({});
+        });
     }
     subscribeToTopics(topics) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.consumer.subscribe({ topics });
+            this.consumer.subscribe([...topics]);
         });
     }
     sendNotification(message) {
@@ -66,11 +95,23 @@ let KafkaService = class KafkaService {
                 yield this.connectProducer();
             }
             this.validator.validateNotification(message);
-            return this.producer.send({
-                topic: kafka_topics_1.KafkaTopic.NOTIFICATION,
-                acks: 1,
-                messages: [{ value: JSON.stringify(message), key: message.messageId || (0, uid_1.uid)(20) }],
-            });
+            return this.producer.produce(
+            // topic
+            kafka_topics_1.KafkaTopic.NOTIFICATION, 
+            // partition,
+            // optionally we can manually specify a partition for the message
+            // this defaults to -1 - which will use librdkafka's default partitioner (consistent random for keyed messages, random for unkeyed messages)
+            null, 
+            // message.value
+            Buffer.from(JSON.stringify(message)), 
+            // message.key, for keyed messages, we also specify the key - note that this field is optional
+            message.messageId || (0, uid_1.uid)(20), 
+            // you can send a timestamp here. If your broker version supports it,
+            // it will get added. Otherwise, we default to 0
+            Date.now()
+            // you can send an opaque token here, which gets passed along
+            // to your delivery reports
+            );
         });
     }
     sendLog(data) {
@@ -78,38 +119,49 @@ let KafkaService = class KafkaService {
             if (!this.isProducerConnected) {
                 yield this.connectProducer();
             }
-            return this.producer.send({
-                topic: kafka_topics_1.KafkaTopic.AUDIT_TRAIL,
-                acks: 1,
-                messages: [{ value: JSON.stringify(data) }],
-            });
+            return this.producer.produce(
+            // topic
+            kafka_topics_1.KafkaTopic.AUDIT_TRAIL, 
+            // partition,
+            // optionally we can manually specify a partition for the message
+            // this defaults to -1 - which will use librdkafka's default partitioner (consistent random for keyed messages, random for unkeyed messages)
+            null, 
+            // message.value
+            Buffer.from(JSON.stringify(data)), 
+            // message.key, for keyed messages, we also specify the key - note that this field is optional
+            (0, uid_1.uid)(20), 
+            // you can send a timestamp here. If your broker version supports it,
+            // it will get added. Otherwise, we default to 0
+            Date.now()
+            // you can send an opaque token here, which gets passed along
+            // to your delivery reports
+            );
         });
     }
     listenForMessages(data) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.isConsumerConnected) {
-                yield this.connectConsumer();
+                yield this.connectConsumer(data.topic);
             }
-            yield this.consumer.run({
-                eachMessage: ({ topic, partition, message }) => __awaiter(this, void 0, void 0, function* () {
-                    let doc;
-                    doc = JSON.parse(message.value.toString());
-                    if (data.topic === topic && doc != null) {
-                        data.handler({
-                            key: message.key ? message.key.toString() : (0, uid_1.uid)(20),
-                            value: doc,
-                            attributes: message.attributes,
-                            offset: message.offset,
-                            size: message.size,
-                            timestamp: message.timestamp,
-                        }, partition);
-                    }
-                }),
+            this.consumer.on('data', ({ topic, partition, value, offset, key, timestamp, headers, size, opaque, }) => {
+                console.log(data);
+                let doc;
+                doc = JSON.parse(value.toString());
+                if (data.topic === topic && doc != null) {
+                    data.handler({
+                        key: key ? key.toString() : (0, uid_1.uid)(20),
+                        value: doc,
+                        attributes: size,
+                        offset: offset,
+                        size: size,
+                        timestamp: timestamp,
+                    }, partition);
+                }
             });
         });
     }
     commitOffsets(topicPartitions) {
-        this.consumer.commitOffsets(topicPartitions);
+        this.consumer.commit(topicPartitions);
     }
 };
 KafkaService = __decorate([

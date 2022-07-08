@@ -3,10 +3,10 @@ import { IMessage } from './i-message';
 export declare type IKafkaMessage = {
     key: String | null;
     value: IMessage | IAudit;
-    timestamp: string;
+    timestamp: number;
     size: number;
     attributes: number;
-    offset: string;
+    offset: number;
 };
 export interface IKafkaMessageHandler {
     autoCommit?: boolean;

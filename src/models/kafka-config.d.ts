@@ -3,9 +3,8 @@ export interface IKafKaConfig {
     brokers: string[];
     groupID: string;
     clientId: string;
-    ssal?: ISsalConfig;
+    sasl?: ISsalConfig;
     ssl?: {
-        ca?: string;
-        rejectUnauthorized?: boolean;
-    } | boolean;
+        ca: string;
+    };
 }
